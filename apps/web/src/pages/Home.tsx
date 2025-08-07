@@ -1,6 +1,48 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import ProjectUploadModal from '../components/ProjectUploadModal'
 
 export default function Home() {
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const navigate = useNavigate()
+
+  const handleNewProject = (projectData: any) => {
+    // In a real app, this would save to a database
+    console.log('New project data:', projectData)
+    alert('Project uploaded successfully! Redirecting to Projects page...')
+    navigate('/projects')
+  }
+
+  const handleExportDemo = () => {
+    alert(`📄 DEMO EXPORT FUNCTIONALITY
+
+This would generate comprehensive reports including:
+
+📊 EXECUTIVE SUMMARY
+• Portfolio performance overview
+• Key profitability metrics
+• Resource utilization analysis
+
+📈 DETAILED ANALYTICS  
+• Project-by-project breakdown
+• Cost analysis trends
+• Labor efficiency metrics
+• Profit margin comparisons
+
+📋 CHARTS & VISUALIZATIONS
+• Revenue vs. cost trends
+• Crew productivity graphs  
+• Project timeline analysis
+• Profit margin distribution
+
+💾 EXPORT OPTIONS
+• PDF reports with charts
+• Excel spreadsheets with data
+• CSV files for further analysis
+• PowerPoint presentation templates
+
+The exported files would be downloaded to your device.`)
+  }
   return (
     <div className="container">
       {/* Hero Section */}
@@ -29,6 +71,15 @@ export default function Home() {
             Import historical job cost data from Excel workbooks with intelligent column mapping 
             and data validation to ensure accuracy.
           </p>
+          <div style={{ marginTop: '1.5rem' }}>
+            <button 
+              className="btn btn-primary btn-small"
+              onClick={() => setShowUploadModal(true)}
+              style={{ width: '100%' }}
+            >
+              📁 Upload Project Data
+            </button>
+          </div>
         </div>
         
         <div className="feature-card">
@@ -38,6 +89,15 @@ export default function Home() {
             Adjust crew sizes, schedules, material costs, and overhead to see real-time 
             impact on profitability and project outcomes.
           </p>
+          <div style={{ marginTop: '1.5rem' }}>
+            <Link 
+              to="/scenarios" 
+              className="btn btn-primary btn-small"
+              style={{ width: '100%', textAlign: 'center', display: 'block', textDecoration: 'none' }}
+            >
+              🔬 Run Scenarios
+            </Link>
+          </div>
         </div>
         
         <div className="feature-card">
@@ -47,6 +107,15 @@ export default function Home() {
             Generate comprehensive PDF reports and Excel exports with charts, analysis, 
             and recommendations for stakeholders.
           </p>
+          <div style={{ marginTop: '1.5rem' }}>
+            <button 
+              className="btn btn-primary btn-small"
+              onClick={handleExportDemo}
+              style={{ width: '100%' }}
+            >
+              📄 Export Results
+            </button>
+          </div>
         </div>
       </section>
 
@@ -112,6 +181,13 @@ export default function Home() {
           </table>
         </div>
       </section>
+
+      {/* Upload Modal */}
+      <ProjectUploadModal 
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onSubmit={handleNewProject}
+      />
     </div>
   )
 }
