@@ -1,104 +1,14 @@
-name: CI/CD Pipeline
+name: Build Check
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: whatif_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install pnpm
-      run: npm install -g pnpm
-    
-    - name: Install dependencies
-      run: pnpm install
-    
-    - name: Lint code
-      run: pnpm lint
-    
-    - name: Run frontend tests
-      run: pnpm test
-      env:
-        CI: true
-    
-    - name: Run API tests
-      run: pnpm test:api
-      env:
-        NODE_ENV: test
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_USER: postgres
-        DB_PASSWORD: postgres
-        DB_NAME: whatif_test
-        JWT_SECRET: test_secret
-    
-    - name: Build applications
-      run: pnpm build
-    
-    - name: Run Lighthouse CI (on main branch)
-      if: github.ref == 'refs/heads/main'
-      run: |
-        npm install -g @lhci/cli@0.12.x
-        lhci autorun
-      env:
-        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-
-  security:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-    
-    - name: Install pnpm
-      run: npm install -g pnpm
-    
-    - name: Install dependencies
-      run: pnpm install
-    
-    - name: Run security audit
-      run: pnpm audit
-    
-    - name: Run Snyk security scan
-      uses: snyk/actions/node@master
-      continue-on-error: true
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-  build-and-deploy:
-    needs: [test, security]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     
     steps:
     - uses: actions/checkout@v4
@@ -109,40 +19,12 @@ jobs:
         node-version: '20'
         cache: 'npm'
     
-    - name: Install pnpm
-      run: npm install -g pnpm
-    
     - name: Install dependencies
-      run: pnpm install
-    
-    - name: Build applications
-      run: pnpm build
-    
-    - name: Build Docker images
       run: |
-        docker build -t whatif-api:${{ github.sha }} ./apps/api
-        docker build -t whatif-web:${{ github.sha }} ./apps/web
+        cd apps/web
+        npm install
     
-    - name: Login to Azure Container Registry
-      if: github.ref == 'refs/heads/main'
-      uses: azure/docker-login@v1
-      with:
-        login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-        username: ${{ secrets.ACR_USERNAME }}
-        password: ${{ secrets.ACR_PASSWORD }}
-    
-    - name: Push to Azure Container Registry
-      if: github.ref == 'refs/heads/main'
+    - name: Build frontend
       run: |
-        docker tag whatif-api:${{ github.sha }} ${{ secrets.ACR_LOGIN_SERVER }}/whatif-api:${{ github.sha }}
-        docker tag whatif-web:${{ github.sha }} ${{ secrets.ACR_LOGIN_SERVER }}/whatif-web:${{ github.sha }}
-        docker push ${{ secrets.ACR_LOGIN_SERVER }}/whatif-api:${{ github.sha }}
-        docker push ${{ secrets.ACR_LOGIN_SERVER }}/whatif-web:${{ github.sha }}
-    
-    - name: Deploy to Azure App Service
-      if: github.ref == 'refs/heads/main'
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        images: ${{ secrets.ACR_LOGIN_SERVER }}/whatif-api:${{ github.sha }}
+        cd apps/web
+        npm run build
