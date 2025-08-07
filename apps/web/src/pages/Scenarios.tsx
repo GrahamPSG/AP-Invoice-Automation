@@ -278,6 +278,51 @@ const Scenarios = () => {
   }
 
   const extractTextFromPDF = async (file: File): Promise<string> => {
+    try {
+      console.log('Starting PDF text extraction for:', file.name)
+      
+      const arrayBuffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+      
+      console.log(`PDF loaded successfully. Pages: ${pdf.numPages}`)
+      
+      let extractedText = `PDF ANALYSIS - File: ${file.name}\n`
+      extractedText += `Total pages: ${pdf.numPages}\n`
+      
+      // Extract text from all pages
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        try {
+          const page = await pdf.getPage(pageNum)
+          const textContent = await page.getTextContent()
+          
+          extractedText += `\n--- PAGE ${pageNum} ---\n`
+          
+          // Combine all text items from the page
+          const pageText = textContent.items
+            .filter(item => 'str' in item)
+            .map(item => (item as any).str)
+            .join(' ')
+          
+          extractedText += pageText + '\n'
+          
+          console.log(`Extracted ${pageText.length} characters from page ${pageNum}`)
+          
+        } catch (pageError) {
+          console.error(`Error processing page ${pageNum}:`, pageError)
+          extractedText += `Error reading page ${pageNum}\n`
+        }
+      }
+      
+      console.log(`Total extracted text length: ${extractedText.length} characters`)
+      return extractedText
+      
+    } catch (error) {
+      console.error('PDF extraction error:', error)
+      return `PDF EXTRACTION ERROR: ${error}\nFile: ${file.name}\nUnable to extract text from PDF`
+    }
+  }
+
+  // OLD FUNCTION REMOVED - using real PDF.js implementation above
     // This would use a PDF parsing library like pdf-parse or PDF.js
     // For now, we'll simulate reading the actual file content
     return new Promise((resolve) => {
@@ -318,6 +363,40 @@ const Scenarios = () => {
   }
 
   const extractTextFromImage = async (file: File): Promise<string> => {
+    try {
+      console.log('Starting OCR for image:', file.name)
+      
+      const worker = await createWorker('eng')
+      
+      let extractedText = `IMAGE ANALYSIS - File: ${file.name}\n`
+      extractedText += 'PERFORMING OCR ON IMAGE...\n'
+      
+      // Convert file to image data
+      const imageDataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => resolve(e.target?.result as string)
+        reader.readAsDataURL(file)
+      })
+      
+      // Perform OCR
+      const { data: { text, confidence } } = await worker.recognize(imageDataUrl)
+      
+      extractedText += `OCR Confidence: ${Math.round(confidence)}%\n`
+      extractedText += `\n--- EXTRACTED TEXT ---\n`
+      extractedText += text
+      
+      await worker.terminate()
+      
+      console.log(`OCR completed. Confidence: ${confidence}%, Text length: ${text.length}`)
+      return extractedText
+      
+    } catch (error) {
+      console.error('OCR error:', error)
+      return `OCR EXTRACTION ERROR: ${error}\nFile: ${file.name}\nUnable to extract text from image`
+    }
+  }
+
+  const extractTextFromImageOld_REMOVE = async (file: File): Promise<string> => {
     // This would use OCR like Tesseract.js to read text from images
     return new Promise((resolve) => {
       const reader = new FileReader()
