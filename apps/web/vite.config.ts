@@ -10,55 +10,31 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      '@shared': path.resolve(__dirname, '../../packages/shared/src')
     }
   },
   build: {
-    // Optimize for production
+    // Optimize for Vercel deployment
     target: 'esnext',
-    minify: 'terser',
-    sourcemap: process.env.NODE_ENV !== 'production',
+    minify: 'esbuild',
+    sourcemap: false,
     
-    // Chunking strategy for better caching
+    // Optimize chunk sizes for Vercel
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor chunks
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          redux: ['@reduxjs/toolkit', 'react-redux'],
-          charts: ['recharts'],
-          forms: ['react-hook-form'],
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
         },
       },
     },
     
-    // Increase chunk size warning limit
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
   },
   
-  // Performance optimizations
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      '@reduxjs/toolkit',
-      'react-redux',
-      'react-hook-form',
-      'recharts',
-    ],
-  },
-  
+  // Development server
   server: {
     port: 5173,
-    host: true, // Allow external connections
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
+    host: true,
   },
   
   preview: {

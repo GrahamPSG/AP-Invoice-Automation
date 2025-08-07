@@ -1,8 +1,8 @@
-name: Build Check
+name: Build and Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
   pull_request:
     branches: [ main ]
 
@@ -27,3 +27,9 @@ jobs:
       run: |
         cd apps/web
         npm run build
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-files
+        path: apps/web/dist/
