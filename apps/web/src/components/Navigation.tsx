@@ -14,6 +14,15 @@ export default function Navigation() {
       <div className="container">
         <div className="nav-container">
           <Link to="/" className="nav-brand">
+            <img 
+              src="https://parismechanical.com/wp-content/uploads/2021/01/Paris-Mechanical-New-Art_White.png"
+              alt="Paris Mechanical"
+              style={{
+                height: '40px',
+                width: 'auto',
+                marginRight: '12px'
+              }}
+            />
             What-If Calculator
           </Link>
           

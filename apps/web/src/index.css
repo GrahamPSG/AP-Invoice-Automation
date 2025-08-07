@@ -88,6 +88,8 @@ h1, h2, h3, h4, h5, h6 {
   color: rgba(255, 255, 255, 0.95);
   text-decoration: none;
   transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
 }
 
 .nav-brand:hover {
@@ -465,6 +467,11 @@ h1, h2, h3, h4, h5, h6 {
   
   .nav-brand {
     font-size: 1.25rem;
+  }
+  
+  .nav-brand img {
+    height: 32px !important;
+    margin-right: 8px !important;
   }
   
   .features {
