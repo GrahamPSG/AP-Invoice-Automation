@@ -83,7 +83,6 @@ const Scenarios = () => {
   const [planAnalysis, setPlanAnalysis] = useState<PlanAnalysis | null>(null)
   const [crewRecommendations, setCrewRecommendations] = useState<CrewRecommendations | null>(null)
   const [perDoorCosts, setPerDoorCosts] = useState<PerDoorCosts | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [currentStep, setCurrentStep] = useState<'upload' | 'analysis' | 'scenario'>('upload')
 
   const formatCurrency = (amount: number) => {
@@ -110,7 +109,6 @@ const Scenarios = () => {
     if (files.length === 0) return
 
     setUploadedPlans(files)
-    setIsAnalyzing(true)
     setCurrentStep('analysis')
 
     // Simulate AI analysis of PDF plans
@@ -125,7 +123,6 @@ const Scenarios = () => {
     const costs = calculatePerDoorCosts(analysis)
     setPerDoorCosts(costs)
     
-    setIsAnalyzing(false)
     setCurrentStep('scenario')
   }
 
@@ -224,59 +221,170 @@ const Scenarios = () => {
         <div className="card">
           <h2 className="card-title">Create New Scenario</h2>
           <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginTop: '0.5rem', marginBottom: '2rem' }}>
-            Configure parameters to analyze potential project outcomes
+            Upload architectural and mechanical plans for AI analysis and scenario creation
           </p>
           
-          <div style={{ display: 'grid', gap: '1.5rem' }}>
-            <div className="form-group">
-              <label className="form-label">Scenario Name</label>
-              <input type="text" className="form-input" placeholder="e.g., Increased Crew Size Analysis" />
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Base Project</label>
-              <select className="form-input">
-                <option>Office Building HVAC Installation</option>
-                <option>Retail Plumbing Retrofit</option>
-                <option>Industrial Complex Build-out</option>
-              </select>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+          {currentStep === 'upload' && (
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
               <div className="form-group">
-                <label className="form-label">Crew Size Change</label>
-                <input type="number" className="form-input" placeholder="0" />
+                <label className="form-label">Upload Plans (PDF, DWG, or Images)</label>
+                <input 
+                  type="file" 
+                  className="form-input" 
+                  multiple 
+                  accept=".pdf,.dwg,.jpg,.jpeg,.png"
+                  onChange={handlePlanUpload}
+                />
+                <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                  Upload architectural floor plans and mechanical drawings. AI will extract square footage, unit count, fixture counts, and HVAC requirements.
+                </p>
               </div>
               
-              <div className="form-group">
-                <label className="form-label">Schedule Change (weeks)</label>
-                <input type="number" className="form-input" placeholder="0" />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Material Inflation (%)</label>
-                <input type="number" className="form-input" placeholder="0" />
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => setShowCreateForm(false)}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
-          </div>
+          )}
           
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-            <button 
-              className="btn btn-primary"
-              onClick={() => {
-                alert('Scenario created successfully!\n\nThis would:\n• Calculate financial impacts\n• Generate risk analysis\n• Create comparison charts\n• Save to database\n• Redirect to results view')
-                setShowCreateForm(false)
-              }}
-            >
-              🔬 Run Scenario
-            </button>
-            <button 
-              className="btn btn-secondary"
-              onClick={() => setShowCreateForm(false)}
-            >
-              Cancel
-            </button>
-          </div>
+          {currentStep === 'analysis' && (
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
+              <div className="spinner" style={{ margin: '0 auto 2rem' }}></div>
+              <h3 style={{ color: 'rgba(255, 255, 255, 0.9)', marginBottom: '1rem' }}>Analyzing Plans...</h3>
+              <p style={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                AI is extracting mechanical data from your plans. This may take a few moments.
+              </p>
+              <div style={{ marginTop: '2rem', textAlign: 'left', color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.875rem' }}>
+                <p>✓ Processing {uploadedPlans.length} plan file{uploadedPlans.length > 1 ? 's' : ''}</p>
+                <p>✓ Extracting square footage and unit count</p>
+                <p>✓ Identifying fixtures and plumbing requirements</p>
+                <p>✓ Analyzing HVAC zones and tonnage</p>
+                <p>✓ Generating crew size recommendations</p>
+              </div>
+            </div>
+          )}
+          
+          {currentStep === 'scenario' && planAnalysis && crewRecommendations && perDoorCosts && (
+            <div style={{ display: 'grid', gap: '2rem' }}>
+              <div className="card" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'rgba(255, 255, 255, 0.95)' }}>📋 Extracted Building Data</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                  <div>
+                    <h4 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.5rem' }}>Property Details</h4>
+                    <p>Square Footage: {planAnalysis.squareFootage.toLocaleString()} sq ft</p>
+                    <p>Unit Count: {planAnalysis.unitCount} units</p>
+                    <p>Building Type: {planAnalysis.buildingType.replace('-', ' ')}</p>
+                    <p>Confidence: {Math.round(planAnalysis.confidence * 100)}%</p>
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.5rem' }}>Fixtures</h4>
+                    <p>Toilets: {planAnalysis.fixtures.toilets}</p>
+                    <p>Sinks: {planAnalysis.fixtures.sinks}</p>
+                    <p>Showers: {planAnalysis.fixtures.showers}</p>
+                    <p>Bathtubs: {planAnalysis.fixtures.bathtubs}</p>
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.5rem' }}>HVAC Requirements</h4>
+                    <p>Zones: {planAnalysis.hvacRequirements.zones}</p>
+                    <p>Tonnage: {planAnalysis.hvacRequirements.tonnage} tons</p>
+                    <p>Vents: {planAnalysis.hvacRequirements.vents}</p>
+                  </div>
+                </div>
+                
+                {planAnalysis.errors.length > 0 && (
+                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px' }}>
+                    <h4 style={{ fontSize: '0.875rem', color: 'rgba(239, 68, 68, 0.9)', marginBottom: '0.5rem' }}>⚠️ Analysis Warnings</h4>
+                    {planAnalysis.errors.map((error, idx) => (
+                      <p key={idx} style={{ fontSize: '0.875rem', color: 'rgba(239, 68, 68, 0.8)', margin: '0.25rem 0' }}>• {error}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="card" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'rgba(255, 255, 255, 0.95)' }}>👷 Recommended Crew Sizes</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                  <div>
+                    <h4 style={{ fontSize: '1rem', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '0.5rem' }}>Plumbing Crew</h4>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.95)', marginBottom: '0.5rem' }}>{crewRecommendations.plumbing.crewSize} people</p>
+                    <p style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.5rem' }}>Duration: {crewRecommendations.plumbing.duration} days</p>
+                    <p style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)' }}>{crewRecommendations.plumbing.reasoning}</p>
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '1rem', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '0.5rem' }}>HVAC Crew</h4>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.95)', marginBottom: '0.5rem' }}>{crewRecommendations.hvac.crewSize} people</p>
+                    <p style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.5rem' }}>Duration: {crewRecommendations.hvac.duration} days</p>
+                    <p style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)' }}>{crewRecommendations.hvac.reasoning}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="card" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
+                <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'rgba(255, 255, 255, 0.95)' }}>💰 Per-Door Cost Estimates</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                  <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
+                    <h4 style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.5rem' }}>Plumbing</h4>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.95)' }}>{formatCurrency(perDoorCosts.plumbing)}</p>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
+                    <h4 style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.5rem' }}>Ventilation</h4>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.95)' }}>{formatCurrency(perDoorCosts.ventilation)}</p>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
+                    <h4 style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '0.5rem' }}>Air Conditioning</h4>
+                    <p style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'rgba(255, 255, 255, 0.95)' }}>{formatCurrency(perDoorCosts.airConditioning)}</p>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', borderRadius: '8px' }}>
+                    <h4 style={{ fontSize: '0.875rem', color: 'rgba(34, 197, 94, 0.9)', marginBottom: '0.5rem' }}>Total Per Door</h4>
+                    <p style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'rgba(34, 197, 94, 0.95)' }}>{formatCurrency(perDoorCosts.totalPerDoor)}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Scenario Name</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder={`${planAnalysis.buildingType.replace('-', ' ')} - ${planAnalysis.unitCount} units analysis`}
+                />
+              </div>
+              
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    alert(`Scenario created successfully!\n\nBuilding: ${planAnalysis.buildingType.replace('-', ' ')} (${planAnalysis.unitCount} units)\nTotal Project Value: ${formatCurrency(perDoorCosts.totalPerDoor * planAnalysis.unitCount)}\nRecommended Crews: ${crewRecommendations.plumbing.crewSize} plumbers, ${crewRecommendations.hvac.crewSize} HVAC techs\n\nThis would:\n• Save scenario to database\n• Generate detailed cost breakdown\n• Create crew scheduling timeline\n• Redirect to results view`)
+                    setShowCreateForm(false)
+                    setCurrentStep('upload')
+                    setUploadedPlans([])
+                    setPlanAnalysis(null)
+                    setCrewRecommendations(null)
+                    setPerDoorCosts(null)
+                  }}
+                >
+                  🔬 Create Scenario
+                </button>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowCreateForm(false)
+                    setCurrentStep('upload')
+                    setUploadedPlans([])
+                    setPlanAnalysis(null)
+                    setCrewRecommendations(null)
+                    setPerDoorCosts(null)
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )
