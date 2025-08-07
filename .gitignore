@@ -1,0 +1,103 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Production builds
+dist/
+build/
+.next/
+.vercel/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows system files
+NTUSER.*
+ntuser.*
+AppData/
+Application Data
+Contacts/
+Cookies
+Documents/My*
+Downloads/
+Favorites/
+Links/
+Local Settings
+Music/
+My Documents
+NetHood
+OneDrive/
+PrintHood
+Recent
+Saved Games/
+Searches/
+SendTo
+Start Menu
+Templates
+Videos/
+.config/
+.vivaldi_reporting_data
+@echo
+nul
+
+# Claude specific
+.claude/
+.claude.json
+.claude.json.backup
+
+# Personal directories
+"Paris Mechanical"*/
+Nextcloud/
+Test1/
+
+# Cache and temporary files
+*.log
+.cache/
+.temp/
+.tmp/
+coverage/
+*.tsbuildinfo
+
+# Database
+*.sqlite
+*.db
+
+# Docker
+docker-compose.override.yml
+
+# Package managers
+.yarn/
+.pnp.*
+package-lock.json
+yarn.lock
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.tgz
+*.tar.gz

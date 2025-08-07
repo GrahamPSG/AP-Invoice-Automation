@@ -1,11 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      // Enable React Fast Refresh
+      fastRefresh: true,
+      // Optimize React in production
+      jsxRuntime: 'automatic',
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
@@ -46,21 +52,72 @@ export default defineConfig({
           }
         ]
       }
-    })
-  ],
+    }),
+    // Bundle analyzer (only in build mode)
+    process.env.ANALYZE && visualizer({
+      filename: 'dist/stats.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ].filter(Boolean),
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@shared': path.resolve(__dirname, '../../packages/shared/src')
     }
   },
+  build: {
+    // Optimize for production
+    target: 'esnext',
+    minify: 'terser',
+    sourcemap: process.env.NODE_ENV !== 'production',
+    
+    // Chunking strategy for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          redux: ['@reduxjs/toolkit', 'react-redux'],
+          charts: ['recharts'],
+          forms: ['react-hook-form'],
+          utils: ['xlsx'],
+        },
+      },
+    },
+    
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+  },
+  
+  // Performance optimizations
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@reduxjs/toolkit',
+      'react-redux',
+      'react-hook-form',
+      'recharts',
+    ],
+  },
+  
   server: {
     port: 5173,
+    host: true, // Allow external connections
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false,
       }
     }
+  },
+  
+  preview: {
+    port: 4173,
+    host: true,
   }
 })

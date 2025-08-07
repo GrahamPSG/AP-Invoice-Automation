@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { Project } from '../projects/project.entity'
+import { CacheService } from '../cache/cache.service'
+import { PerformanceService } from '../performance/performance.service'
 
 interface ScenarioInputs {
   projectSize: { units?: number; dollars?: number; sqFt?: number }
@@ -26,7 +28,58 @@ interface ScenarioOutputs {
 
 @Injectable()
 export class ScenarioComputeService {
-  computeScenario(
+  private readonly logger = new Logger(ScenarioComputeService.name)
+
+  constructor(
+    private cacheService: CacheService,
+    private performanceService: PerformanceService,
+  ) {}
+
+  async computeScenario(
+    inputs: ScenarioInputs,
+    baseProject?: Project,
+  ): Promise<ScenarioOutputs> {
+    const startTime = Date.now()
+    
+    try {
+      // Create cache key based on inputs and project
+      const inputsHash = this.cacheService.createInputsHash({ 
+        inputs, 
+        projectId: baseProject?.id 
+      })
+      const cacheKey = this.cacheService.generateComputationKey(inputsHash)
+      
+      // Check cache first
+      let cached = await this.cacheService.get<ScenarioOutputs>(cacheKey)
+      if (cached) {
+        this.performanceService.recordCacheHit(true)
+        this.logger.debug(`Cache hit for scenario computation: ${inputsHash}`)
+        return cached
+      }
+      
+      this.performanceService.recordCacheHit(false)
+      
+      // Perform computation
+      const results = this.performComputation(inputs, baseProject)
+      
+      // Cache results for 5 minutes (computations can be expensive)
+      await this.cacheService.set(cacheKey, results, 300)
+      
+      const duration = Date.now() - startTime
+      if (duration > 200) {
+        this.performanceService.recordSlowQuery(`scenario computation ${inputsHash}`, duration)
+      }
+      
+      this.logger.debug(`Computed scenario in ${duration}ms`)
+      
+      return results
+    } catch (error) {
+      this.logger.error('Failed to compute scenario:', error)
+      throw error
+    }
+  }
+
+  private performComputation(
     inputs: ScenarioInputs,
     baseProject?: Project,
   ): ScenarioOutputs {
