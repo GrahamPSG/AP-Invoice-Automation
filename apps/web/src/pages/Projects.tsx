@@ -87,19 +87,28 @@ const Projects = () => {
 
       {/* Filters */}
       <div className="card" style={{ marginBottom: '2rem' }}>
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">Filter by Status:</label>
-          <select 
-            className="form-input"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
-            style={{ maxWidth: '300px' }}
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'end', flexWrap: 'wrap' }}>
+          <div className="form-group" style={{ marginBottom: 0, minWidth: '200px' }}>
+            <label className="form-label">Filter by Status</label>
+            <select 
+              className="form-input"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as any)}
+            >
+              <option value="all">All Projects</option>
+              <option value="completed">Completed</option>
+              <option value="in-progress">In Progress</option>
+              <option value="planned">Planned</option>
+            </select>
+          </div>
+          
+          <button 
+            className="btn btn-primary btn-small"
+            onClick={() => alert('Upload functionality would allow you to:\n\n• Import Excel files with project data\n• Map columns to project fields\n• Validate and clean data\n• Add projects to database\n• Generate summary reports\n\nSupported formats: .xlsx, .xls, .csv')}
+            style={{ marginBottom: 0 }}
           >
-            <option value="all">All Projects</option>
-            <option value="completed">Completed</option>
-            <option value="in-progress">In Progress</option>
-            <option value="planned">Planned</option>
-          </select>
+            📁 Upload Project Data
+          </button>
         </div>
       </div>
 
@@ -137,11 +146,17 @@ const Projects = () => {
               </div>
             </div>
 
-            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
-              <button className="btn btn-primary" style={{ marginRight: '1rem' }}>
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <button 
+                className="btn btn-primary btn-small"
+                onClick={() => alert(`Creating scenario for ${project.name}. This would open the scenario creation form with pre-filled project data.`)}
+              >
                 📊 Create Scenario
               </button>
-              <button className="btn btn-secondary">
+              <button 
+                className="btn btn-secondary btn-small"
+                onClick={() => alert(`Viewing details for ${project.name}:\n\nRevenue: ${formatCurrency(project.revenue)}\nLabor: ${formatCurrency(project.laborCost)}\nMaterials: ${formatCurrency(project.materialCost)}\nProfit Margin: ${project.profitMargin}%\nDuration: ${project.duration} weeks\nCrew: ${project.crewSize} people`)}
+              >
                 📝 View Details
               </button>
             </div>

@@ -59,15 +59,60 @@ const Scenarios = () => {
       <div className="container">
         <div className="card">
           <h2 className="card-title">Create New Scenario</h2>
-          <p style={{ color: '#64748b', marginTop: '0.5rem', marginBottom: '2rem' }}>
-            This is a demo version. Scenario creation would be implemented in the full application.
+          <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginTop: '0.5rem', marginBottom: '2rem' }}>
+            Configure parameters to analyze potential project outcomes
           </p>
-          <button 
-            className="btn btn-secondary"
-            onClick={() => setShowCreateForm(false)}
-          >
-            Back to Scenarios
-          </button>
+          
+          <div style={{ display: 'grid', gap: '1.5rem' }}>
+            <div className="form-group">
+              <label className="form-label">Scenario Name</label>
+              <input type="text" className="form-input" placeholder="e.g., Increased Crew Size Analysis" />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Base Project</label>
+              <select className="form-input">
+                <option>Office Building HVAC Installation</option>
+                <option>Retail Plumbing Retrofit</option>
+                <option>Industrial Complex Build-out</option>
+              </select>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Crew Size Change</label>
+                <input type="number" className="form-input" placeholder="0" />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Schedule Change (weeks)</label>
+                <input type="number" className="form-input" placeholder="0" />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Material Inflation (%)</label>
+                <input type="number" className="form-input" placeholder="0" />
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+            <button 
+              className="btn btn-primary"
+              onClick={() => {
+                alert('Scenario created successfully!\n\nThis would:\n• Calculate financial impacts\n• Generate risk analysis\n• Create comparison charts\n• Save to database\n• Redirect to results view')
+                setShowCreateForm(false)
+              }}
+            >
+              🔬 Run Scenario
+            </button>
+            <button 
+              className="btn btn-secondary"
+              onClick={() => setShowCreateForm(false)}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -133,10 +178,16 @@ const Scenarios = () => {
                   Actions
                 </h4>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button className="btn btn-primary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
+                  <button 
+                    className="btn btn-primary btn-small"
+                    onClick={() => alert(`Scenario Details: ${scenario.name}\n\nBase Project: ${scenario.projectName}\nBase Revenue: ${formatCurrency(scenario.baseRevenue)}\nProfit Change: ${scenario.profitChange > 0 ? '+' : ''}${formatCurrency(scenario.profitChange)}\nMargin Change: ${scenario.profitMarginChange > 0 ? '+' : ''}${scenario.profitMarginChange}%\nCreated: ${new Date(scenario.createdAt).toLocaleDateString()}\n\nThis would open a detailed analysis view with charts and recommendations.`)}
+                  >
                     📊 View Details
                   </button>
-                  <button className="btn btn-secondary" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
+                  <button 
+                    className="btn btn-secondary btn-small"
+                    onClick={() => alert(`Exporting report for: ${scenario.name}\n\nThis would generate a PDF report containing:\n• Executive Summary\n• Parameter Adjustments\n• Financial Impact Analysis\n• Risk Assessment\n• Recommendations\n• Charts & Graphs\n\nReport would be downloaded as "${scenario.name.replace(/\s+/g, '_')}_Report.pdf"`)}
+                  >
                     📄 Export Report
                   </button>
                 </div>
