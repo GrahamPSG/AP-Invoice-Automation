@@ -104,17 +104,22 @@ const Scenarios = () => {
     return '➡️'
   }
 
-  const handlePlanUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePlanUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     if (files.length === 0) return
 
     setUploadedPlans(files)
+  }
+
+  const handleRunAnalysis = async () => {
+    if (uploadedPlans.length === 0) return
+
     setCurrentStep('analysis')
 
     // Simulate AI analysis of PDF plans
     await new Promise(resolve => setTimeout(resolve, 3000))
     
-    const analysis = await simulatePlanAnalysis(files)
+    const analysis = await simulatePlanAnalysis(uploadedPlans)
     setPlanAnalysis(analysis)
     
     const crews = generateCrewRecommendations(analysis)
@@ -131,9 +136,16 @@ const Scenarios = () => {
     const hasArchitectural = files.some(f => f.name.toLowerCase().includes('arch') || f.name.toLowerCase().includes('floor'))
     const hasMechanical = files.some(f => f.name.toLowerCase().includes('mech') || f.name.toLowerCase().includes('plumb') || f.name.toLowerCase().includes('hvac'))
     
+    // Generate more realistic building data based on file analysis
+    const estimatedSize = files.length > 1 ? 'large' : 'medium'
+    const baseUnits = estimatedSize === 'large' ? 50 : 20
+    const unitVariation = estimatedSize === 'large' ? 100 : 30
+    const baseSqFt = estimatedSize === 'large' ? 80000 : 20000
+    const sqFtVariation = estimatedSize === 'large' ? 100000 : 40000
+    
     const analysis: PlanAnalysis = {
-      squareFootage: Math.floor(Math.random() * 5000) + 2000,
-      unitCount: Math.floor(Math.random() * 12) + 1,
+      squareFootage: Math.floor(Math.random() * sqFtVariation) + baseSqFt,
+      unitCount: Math.floor(Math.random() * unitVariation) + baseUnits,
       buildingType: Math.random() > 0.6 ? 'multi-family' : Math.random() > 0.3 ? 'commercial' : 'single-family',
       fixtures: {
         toilets: Math.floor(Math.random() * 15) + 2,
@@ -238,9 +250,28 @@ const Scenarios = () => {
                 <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
                   Upload architectural floor plans and mechanical drawings. AI will extract square footage, unit count, fixture counts, and HVAC requirements.
                 </p>
+                {uploadedPlans.length > 0 && (
+                  <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px' }}>
+                    <h4 style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.9)', marginBottom: '0.5rem' }}>Selected Files ({uploadedPlans.length}):</h4>
+                    {uploadedPlans.map((file, idx) => (
+                      <p key={idx} style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.7)', margin: '0.25rem 0' }}>• {file.name}</p>
+                    ))}
+                  </div>
+                )}
               </div>
               
               <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                <button 
+                  className="btn btn-primary"
+                  onClick={handleRunAnalysis}
+                  disabled={uploadedPlans.length === 0}
+                  style={{ 
+                    opacity: uploadedPlans.length === 0 ? 0.5 : 1,
+                    cursor: uploadedPlans.length === 0 ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  🔍 Analyze Plans
+                </button>
                 <button 
                   className="btn btn-secondary"
                   onClick={() => setShowCreateForm(false)}
