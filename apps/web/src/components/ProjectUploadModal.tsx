@@ -44,6 +44,10 @@ interface ProjectData {
 }
 
 const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalProps) => {
+  const [step, setStep] = useState<'upload' | 'form'>('upload')
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [missingFields, setMissingFields] = useState<string[]>([])
+  const [showMissingFieldsModal, setShowMissingFieldsModal] = useState(false)
   const [formData, setFormData] = useState<ProjectData>({
     projectType: 'custom-homes',
     projectName: '',
@@ -75,6 +79,78 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
     }))
   }
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploadedFile(file)
+    
+    // Simulate Excel parsing and data extraction
+    // In a real implementation, you'd use a library like SheetJS to parse Excel files
+    const simulatedData = await simulateExcelParsing(file)
+    
+    // Update form data with parsed values
+    setFormData(prev => ({ ...prev, ...simulatedData.data }))
+    
+    // Track missing fields
+    setMissingFields(simulatedData.missingFields)
+    
+    // Show missing fields popup if any
+    if (simulatedData.missingFields.length > 0) {
+      setShowMissingFieldsModal(true)
+    }
+    
+    // Move to form step
+    setStep('form')
+  }
+
+  const simulateExcelParsing = async (_file: File): Promise<{
+    data: Partial<ProjectData>
+    missingFields: string[]
+  }> => {
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    // Simulate extracted data from Excel (you'd implement real parsing here)
+    const extractedData: Partial<ProjectData> = {
+      projectName: 'COPA21101 - 1263 Balfour Avenue', // Found in Excel
+      projectType: 'custom-homes', // Found in Excel
+      laborCost: 89200, // Found in Excel
+      materialCost: 156800, // Found in Excel
+      equipmentCost: 12500, // Found in Excel
+      laborHoursActual: 712, // Found in Excel
+      crewSize: 8, // Found in Excel
+      duration: 12, // Found in Excel
+      durationUnit: 'weeks', // Found in Excel
+      // Some fields missing from Excel
+    }
+    
+    // Fields that couldn't be found in the spreadsheet
+    const missingFields = [
+      'Subcontractor Cost',
+      'Permits & Rentals Cost', 
+      'Overhead Allocation',
+      'Gross Profit',
+      'Net Profit',
+      'Revenue per Tech',
+      'Project Phases'
+    ]
+    
+    return { data: extractedData, missingFields }
+  }
+
+  const getFieldStyle = (fieldName: string) => {
+    const isHighlighted = missingFields.some(field => 
+      field.toLowerCase().includes(fieldName.toLowerCase()) ||
+      fieldName.toLowerCase().includes(field.toLowerCase().replace(/[^a-z]/g, ''))
+    )
+    
+    return {
+      border: isHighlighted ? '2px solid #ef4444' : '1px solid rgba(0, 0, 0, 0.2)',
+      background: isHighlighted ? '#fef2f2' : 'white'
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit(formData)
@@ -99,45 +175,186 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0, 0, 0, 0.8)',
+      background: 'rgba(0, 0, 0, 0.9)',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 1000,
       padding: '1rem'
     }}>
-      <div className="card" style={{
-        maxWidth: '800px',
+      <div style={{
+        maxWidth: '900px',
         width: '100%',
-        maxHeight: '90vh',
+        maxHeight: '95vh',
         overflow: 'auto',
-        margin: 0
+        margin: 0,
+        background: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '16px',
+        padding: '2rem',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        color: '#111827'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2 className="card-title">Upload Project Data</h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', margin: 0 }}>
+            {step === 'upload' ? 'Upload Project Spreadsheet' : 'Review & Complete Project Data'}
+          </h2>
           <button 
             onClick={onClose}
-            className="btn btn-secondary btn-small"
-            style={{ padding: '0.5rem' }}
+            style={{ 
+              padding: '0.5rem',
+              background: 'transparent',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              color: '#6b7280'
+            }}
           >
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.5rem' }}>
+        {step === 'upload' ? (
+          <div style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+            <div style={{ 
+              border: '2px dashed #d1d5db', 
+              borderRadius: '12px', 
+              padding: '3rem', 
+              marginBottom: '2rem',
+              background: '#f9fafb'
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+              <h3 style={{ color: '#111827', marginBottom: '1rem' }}>Upload Your Project Spreadsheet</h3>
+              <p style={{ color: '#6b7280', marginBottom: '2rem', lineHeight: '1.5' }}>
+                Upload your Excel file with project data. We'll automatically scan and extract:
+                <br />• Project details and scope
+                <br />• Labor analysis and cost breakdowns
+                <br />• Profit analysis and crew metrics
+              </p>
+              
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+                id="file-upload"
+              />
+              <label 
+                htmlFor="file-upload"
+                style={{
+                  display: 'inline-block',
+                  padding: '0.75rem 2rem',
+                  background: '#3b82f6',
+                  color: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  border: 'none',
+                  fontSize: '16px'
+                }}
+              >
+                📁 Choose Excel File
+              </label>
+              
+              {uploadedFile && (
+                <div style={{ 
+                  marginTop: '1rem', 
+                  padding: '1rem', 
+                  background: '#e0f2fe', 
+                  borderRadius: '8px',
+                  color: '#0369a1'
+                }}>
+                  ✅ Uploaded: {uploadedFile.name}
+                  <br />
+                  <div style={{ fontSize: '14px', marginTop: '0.5rem' }}>
+                    Processing spreadsheet and extracting data...
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div style={{ 
+              fontSize: '14px', 
+              color: '#6b7280',
+              borderTop: '1px solid #e5e7eb',
+              paddingTop: '1rem'
+            }}>
+              Supported formats: .xlsx, .xls, .csv
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Missing Fields Modal */}
+            {showMissingFieldsModal && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1001
+              }}>
+                <div style={{
+                  background: 'white',
+                  padding: '2rem',
+                  borderRadius: '12px',
+                  maxWidth: '500px',
+                  width: '90%',
+                  boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)'
+                }}>
+                  <h3 style={{ color: '#dc2626', marginBottom: '1rem' }}>⚠️ Missing Information</h3>
+                  <p style={{ marginBottom: '1rem', color: '#374151' }}>
+                    We couldn't find the following information in your spreadsheet. 
+                    Please fill in these fields manually (highlighted in red):
+                  </p>
+                  <ul style={{ marginBottom: '1.5rem', color: '#6b7280' }}>
+                    {missingFields.map((field, index) => (
+                      <li key={index} style={{ marginBottom: '0.5rem' }}>• {field}</li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => setShowMissingFieldsModal(false)}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: '500'
+                    }}
+                  >
+                    Continue to Form
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1.5rem' }}>
           {/* Basic Project Info */}
           <div>
-            <h3 className="section-title">Project Information</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>Project Information</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Project Name</label>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>Project Name</label>
                 <input 
                   type="text" 
-                  className="form-input"
                   value={formData.projectName}
                   onChange={(e) => handleInputChange('projectName', e.target.value)}
                   placeholder="e.g., COPA21101 - 1263 Balfour Avenue"
                   required
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    ...getFieldStyle('projectName')
+                  }}
                 />
               </div>
               
@@ -221,7 +438,7 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
 
           {/* Labor Hours */}
           <div>
-            <h3 className="section-title">Labor Analysis</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>Labor Analysis</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Estimated Labor Hours</label>
@@ -260,7 +477,7 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
 
           {/* Cost Breakdowns */}
           <div>
-            <h3 className="section-title">Cost Breakdown</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>Cost Breakdown</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Labor Cost</label>
@@ -296,35 +513,53 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
               </div>
               
               <div className="form-group">
-                <label className="form-label">Subcontractors</label>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>Subcontractors</label>
                 <input 
                   type="number" 
-                  className="form-input"
                   value={formData.subcontractorCost}
                   onChange={(e) => handleInputChange('subcontractorCost', Number(e.target.value))}
                   placeholder="25000"
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    ...getFieldStyle('subcontractor')
+                  }}
                 />
               </div>
               
               <div className="form-group">
-                <label className="form-label">Permits & Rentals</label>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>Permits & Rentals</label>
                 <input 
                   type="number" 
-                  className="form-input"
                   value={formData.permitsRentalsCost}
                   onChange={(e) => handleInputChange('permitsRentalsCost', Number(e.target.value))}
                   placeholder="8500"
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    ...getFieldStyle('permits')
+                  }}
                 />
               </div>
               
               <div className="form-group">
-                <label className="form-label">Overhead Allocation</label>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>Overhead Allocation</label>
                 <input 
                   type="number" 
-                  className="form-input"
                   value={formData.overheadAllocation}
                   onChange={(e) => handleInputChange('overheadAllocation', Number(e.target.value))}
                   placeholder="32500"
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    ...getFieldStyle('overhead')
+                  }}
                 />
               </div>
             </div>
@@ -336,27 +571,39 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
 
           {/* Profit Analysis */}
           <div>
-            <h3 className="section-title">Profit Analysis</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>Profit Analysis</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <div className="form-group">
-                <label className="form-label">Gross Profit</label>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>Gross Profit</label>
                 <input 
                   type="number" 
-                  className="form-input"
                   value={formData.grossProfit}
                   onChange={(e) => handleInputChange('grossProfit', Number(e.target.value))}
                   placeholder="60000"
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    ...getFieldStyle('gross profit')
+                  }}
                 />
               </div>
               
               <div className="form-group">
-                <label className="form-label">Net Profit</label>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>Net Profit</label>
                 <input 
                   type="number" 
-                  className="form-input"
                   value={formData.netProfit}
                   onChange={(e) => handleInputChange('netProfit', Number(e.target.value))}
                   placeholder="45000"
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    ...getFieldStyle('net profit')
+                  }}
                 />
               </div>
               
@@ -379,7 +626,7 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
 
           {/* Crew & Performance */}
           <div>
-            <h3 className="section-title">Crew & Performance Metrics</h3>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>Crew & Performance Metrics</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Crew Size</label>
@@ -393,13 +640,19 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
               </div>
               
               <div className="form-group">
-                <label className="form-label">Revenue per Tech</label>
+                <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>Revenue per Tech</label>
                 <input 
                   type="number" 
-                  className="form-input"
                   value={formData.revenuePerTech}
                   onChange={(e) => handleInputChange('revenuePerTech', Number(e.target.value))}
                   placeholder="40562"
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    ...getFieldStyle('revenue per tech')
+                  }}
                 />
               </div>
               
@@ -416,27 +669,58 @@ const ProjectUploadModal = ({ isOpen, onClose, onSubmit }: ProjectUploadModalPro
             </div>
             
             <div className="form-group">
-              <label className="form-label">Project Phases</label>
+              <label style={{ display: 'block', fontWeight: '500', color: '#374151', marginBottom: '0.5rem' }}>Project Phases</label>
               <input 
                 type="text" 
-                className="form-input"
                 value={formData.phases}
                 onChange={(e) => handleInputChange('phases', e.target.value)}
                 placeholder="Rough-in, Top-out, Trim, Final"
+                style={{
+                  width: '100%',
+                  padding: '0.875rem 1rem',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  ...getFieldStyle('project phases')
+                }}
               />
             </div>
           </div>
 
           {/* Submit */}
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary">
+            <button 
+              type="button" 
+              onClick={onClose}
+              style={{
+                padding: '0.875rem 1.5rem',
+                background: 'transparent',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                color: '#6b7280',
+                fontWeight: '500'
+              }}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button 
+              type="submit"
+              style={{
+                padding: '0.875rem 1.5rem',
+                background: '#3b82f6',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                color: 'white',
+                fontWeight: '500'
+              }}
+            >
               📊 Save Project Data
             </button>
           </div>
-        </form>
+            </form>
+          </>
+        )}
       </div>
     </div>
   )
