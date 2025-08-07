@@ -1,50 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react'
-import { onCLS, onFID, onFCP, onLCP, onTTFB } from 'web-vitals'
-
-interface PerformanceMetrics {
-  cls: number | null
-  fid: number | null
-  fcp: number | null
-  lcp: number | null
-  ttfb: number | null
-}
+import { useRef, useCallback, useEffect } from 'react'
 
 export function usePerformance() {
-  const metricsRef = useRef<PerformanceMetrics>({
-    cls: null,
-    fid: null,
-    fcp: null,
-    lcp: null,
-    ttfb: null,
-  })
-
-  const reportMetric = useCallback((metric: any) => {
-    // Store the metric
-    metricsRef.current = {
-      ...metricsRef.current,
-      [metric.name.toLowerCase()]: metric.value,
-    }
-
-    // Send to analytics (in production)
-    if (process.env.NODE_ENV === 'production') {
-      // Send to your analytics service
-      console.log('Performance metric:', metric.name, metric.value)
-    }
-  }, [])
-
-  useEffect(() => {
-    // Measure all Core Web Vitals
-    onCLS(reportMetric)
-    onFID(reportMetric)
-    onFCP(reportMetric)
-    onLCP(reportMetric)
-    onTTFB(reportMetric)
-  }, [reportMetric])
-
-  const getMetrics = useCallback(() => {
-    return metricsRef.current
-  }, [])
-
   const measureCustomMetric = useCallback((name: string, startTime: number) => {
     const duration = performance.now() - startTime
     
@@ -56,7 +12,6 @@ export function usePerformance() {
   }, [])
 
   return {
-    getMetrics,
     measureCustomMetric,
   }
 }

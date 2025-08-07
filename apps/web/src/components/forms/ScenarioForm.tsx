@@ -52,9 +52,7 @@ const ScenarioForm = ({ scenario, onSuccess, onCancel }: ScenarioFormProps) => {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const scenarioData = {
-        projectId: data.projectId || undefined,
-        isPublic: data.isPublic,
+      const inputs = {
         projectSize: data.projectSize,
         scope: data.scope,
         crewChange: data.crewChange,
@@ -65,11 +63,16 @@ const ScenarioForm = ({ scenario, onSuccess, onCancel }: ScenarioFormProps) => {
         targetProfitPct: data.targetProfitPct,
       }
 
+      const scenarioData = {
+        projectId: data.projectId || undefined,
+        inputs,
+      }
+
       let result
       if (isEditing) {
         result = await updateScenario({
           id: scenario.id,
-          inputs: scenarioData,
+          ...scenarioData,
         }).unwrap()
       } else {
         result = await createScenario(scenarioData).unwrap()

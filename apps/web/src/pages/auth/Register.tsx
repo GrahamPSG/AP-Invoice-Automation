@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { useDispatch } from 'react-redux'
-import { authSlice } from '@/store/authSlice'
 import { useToast } from '@/hooks/useToast'
 import Toast from '@/components/ui/Toast'
 
@@ -17,7 +15,6 @@ interface RegisterForm {
 const Register = () => {
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
-  const dispatch = useDispatch()
   const { toasts, removeToast, error: showError, success } = useToast()
 
   const {
@@ -58,7 +55,7 @@ const Register = () => {
         throw new Error(error.message || 'Registration failed')
       }
 
-      const result = await response.json()
+      await response.json()
       
       success('Account created successfully! Please sign in.')
       navigate('/auth/login')

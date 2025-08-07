@@ -284,7 +284,7 @@ const ScenarioResults = ({ outputs }: ScenarioResultsProps) => {
                   'Current'
                 ]}
               />
-              <Bar dataKey="value" fill={(entry) => entry.color} />
+              <Bar dataKey="value" fill="#3b82f6" />
               <Bar dataKey="target" fill="#e5e7eb" opacity={0.5} />
             </BarChart>
           </ResponsiveContainer>

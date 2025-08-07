@@ -54,7 +54,7 @@ const ColumnMapping = ({
   const handleMappingChange = (field: string, column: string) => {
     setMapping(prev => ({
       ...prev,
-      [field]: column === '' ? undefined : column,
+      [field]: column === '' ? '' : column,
     }))
   }
 
