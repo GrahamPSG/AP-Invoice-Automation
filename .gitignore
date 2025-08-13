@@ -70,6 +70,11 @@ nul
 
 # Personal directories
 "Paris Mechanical"*/
+"Paris Mechanical Ltd"/
+"Paris Mechanical(1)"/
+Paris Mechanical*/
+Paris Mechanical Ltd/
+Paris Mechanical(1)/
 Nextcloud/
 Test1/
 
@@ -91,8 +96,7 @@ docker-compose.override.yml
 # Package managers
 .yarn/
 .pnp.*
-package-lock.json
-yarn.lock
+pnpm-lock.yaml
 
 # Testing
 coverage/
@@ -101,3 +105,21 @@ coverage/
 # Misc
 *.tgz
 *.tar.gz
+
+# Azure specific
+local.settings.json
+.azure/
+
+# Vite specific
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Excel temporary files
+~$*.xlsx
+~$*.xls
+
+# PDF temporary files
+.fuse_hidden*
+
+# Git configuration (local only)
+.gitconfig

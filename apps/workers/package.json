@@ -1,0 +1,32 @@
+{
+  "name": "@paris/workers",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@azure/service-bus": "^7.9.0",
+    "@azure/ai-document-intelligence": "^1.0.0",
+    "@azure/storage-blob": "^12.19.0",
+    "@microsoft/microsoft-graph-client": "^3.0.0",
+    "@paris/shared": "workspace:*",
+    "@prisma/client": "^5.14.0",
+    "bullmq": "^5.8.0",
+    "ioredis": "^5.4.0",
+    "pino": "^9.3.0",
+    "pdf-lib": "^1.17.0",
+    "pdf-parse": "^1.1.1",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "jest": "^29.7.0",
+    "prisma": "^5.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

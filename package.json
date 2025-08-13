@@ -1,34 +1,22 @@
 {
-  "name": "what-if-calculator",
+  "name": "paris-ap-agent",
   "private": true,
+  "packageManager": "pnpm@9.5.0",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -k \"pnpm --filter web dev\" \"pnpm --filter api start:dev\"",
-    "build": "pnpm --filter web build && pnpm --filter api build",
+    "dev": "concurrently -k -n API,WORKERS,ADMIN \"pnpm --filter @paris/api dev\" \"pnpm --filter @paris/workers dev\" \"pnpm --filter @paris/admin dev\"",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:api": "nx run api:test",
-    "cypress:run": "cypress run",
-    "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write ."
+    "build": "pnpm -r build"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.1.0",
-    "@testing-library/react": "^13.4.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "concurrently": "^8.2.0",
-    "eslint": "^8.45.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-import": "^2.28.0",
-    "jest": "^29.0.0",
-    "jsdom": "^22.1.0",
-    "nx": "^16.7.0",
-    "postcss": "^8.4.27",
-    "prettier": "^3.3.0",
-    "typescript": "^5.1.0",
-    "vitest": "^1.6.0"
+    "concurrently": "^9.0.0",
+    "eslint": "^9.5.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
   }
 }

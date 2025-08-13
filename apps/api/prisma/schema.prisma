@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Email {
+  id          String       @id @default(uuid())
+  messageId   String       @unique
+  from        String
+  receivedAt  DateTime
+  subject     String
+  status      EmailStatus  @default(QUEUED)
+  processedAt DateTime?
+  error       String?
+  attachments Attachment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([status, receivedAt])
+}
+
+model Attachment {
+  id               String     @id @default(uuid())
+  emailId          String
+  email            Email      @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  name             String
+  contentType      String
+  size             Int
+  sha256           String
+  sharepointRawPath String?
+  documents        Document[]
+  createdAt        DateTime   @default(now())
+
+  @@unique([sha256])
+  @@index([emailId])
+}
+
+model Document {
+  id                     String      @id @default(uuid())
+  attachmentId           String
+  attachment             Attachment  @relation(fields: [attachmentId], references: [id])
+  supplierNameRaw        String
+  supplierNameNormalized String
+  invoiceNumber          String
+  invoiceDate            DateTime
+  totalBeforeTax         Int
+  gst                    Int
+  pst                    Int
+  total                  Int
+  poNumberRaw            String?
+  poNumberCore           String?
+  isServiceStock         Boolean     @default(false)
+  pageCount              Int
+  sourcePdfPath          String
+  renamedPdfPath         String?
+  matchResult            MatchResult?
+  bill                   Bill?
+  hold                   Hold?
+  lineItems              LineItem[]
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  @@index([supplierNameNormalized, invoiceNumber])
+  @@index([poNumberCore])
+}
+
+model LineItem {
+  id          String   @id @default(uuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sku         String?
+  description String
+  qty         Float
+  unitPrice   Int?
+  total       Int?
+  category    ItemCategory
+  inPricebook Boolean  @default(false)
+
+  @@index([documentId])
+}
+
+model MatchResult {
+  id              String   @id @default(uuid())
+  documentId      String   @unique
+  document        Document @relation(fields: [documentId], references: [id])
+  poFound         Boolean
+  poId            String?
+  jobId           String?
+  leadTechId      String?
+  truckLocationId String?
+  vendorId        String?
+  variance        Int
+  action          MatchAction
+  reasons         String[]
+  suggestions     Json?
+  createdAt       DateTime @default(now())
+}
+
+model Bill {
+  id                  String     @id @default(uuid())
+  documentId          String     @unique
+  document            Document   @relation(fields: [documentId], references: [id])
+  vendorId            String
+  invoiceNumber       String
+  serviceTitanBillId  String?
+  status              BillStatus
+  pdfPath             String
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@unique([vendorId, invoiceNumber])
+  @@index([status])
+}
+
+model Hold {
+  id               String       @id @default(uuid())
+  documentId       String       @unique
+  document         Document     @relation(fields: [documentId], references: [id])
+  reason           HoldReason
+  details          String
+  suggestedActions String[]
+  createdAt        DateTime     @default(now())
+  resolvedAt       DateTime?
+  resolvedBy       String?
+  resolution       String?
+
+  @@index([reason, resolvedAt])
+}
+
+model Vendor {
+  id         String          @id @default(uuid())
+  name       String          @unique
+  normalized String          @unique
+  synonyms   VendorSynonym[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+model VendorSynonym {
+  id         String   @id @default(uuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  synonym    String   @unique
+  normalized String   @unique
+  createdAt  DateTime @default(now())
+
+  @@index([normalized])
+}
+
+model DedupeEntry {
+  id            String   @id @default(uuid())
+  vendorId      String
+  invoiceNumber String
+  documentId    String
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+
+  @@unique([vendorId, invoiceNumber])
+  @@index([expiresAt])
+}
+
+model Configuration {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  userId     String?
+  before     Json?
+  after      Json?
+  timestamp  DateTime @default(now())
+  metadata   Json?
+
+  @@index([entityType, entityId])
+  @@index([timestamp])
+}
+
+enum EmailStatus {
+  QUEUED
+  PROCESSING
+  ARCHIVED
+  ERROR
+}
+
+enum ItemCategory {
+  PH
+  HVAC
+  UNKNOWN
+}
+
+enum MatchAction {
+  AUTO_FINALIZE
+  DRAFT_THEN_ALERT
+  HOLD_FOR_REVIEW
+  NON_JOB_STOCK_HOLD
+}
+
+enum BillStatus {
+  FINALIZED
+  DRAFT
+  HELD
+}
+
+enum HoldReason {
+  MISSING_PO
+  VARIANCE_EXCEEDED
+  NEGATIVE_QUANTITY
+  NO_TECH_TRUCK
+  UNREADABLE
+  DUPLICATE
+  NO_VENDOR_MATCH
+  SERVICE_STOCK
+}

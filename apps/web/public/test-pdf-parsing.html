@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Parsing Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .result {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c66;
+        }
+        .success {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #6c6;
+        }
+        pre {
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 PDF Parsing Test - OpenAI API</h1>
+    
+    <div class="container">
+        <h2>Test PDF Upload and Parsing</h2>
+        <p>Upload a PDF file to test the OpenAI-powered extraction system.</p>
+        
+        <input type="file" id="pdfFile" accept=".pdf" />
+        <br>
+        <button onclick="testParsing()" id="parseBtn">Parse PDF with OpenAI</button>
+        <button onclick="testEndpoint()" id="testBtn">Test API Endpoint</button>
+        <button onclick="createTestPDF()" id="createBtn">Create Test PDF</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <div class="container">
+        <h2>Expected Extraction from Test PDF</h2>
+        <ul>
+            <li><strong>Square Footage:</strong> 105,010 sq ft</li>
+            <li><strong>Unit Count:</strong> 141 units</li>
+            <li><strong>Building Type:</strong> Multi-family residential</li>
+            <li><strong>Toilets:</strong> 169</li>
+            <li><strong>Sinks:</strong> 352 total (211 lavatories + 141 kitchen sinks)</li>
+            <li><strong>Showers:</strong> 113</li>
+            <li><strong>Bathtubs:</strong> 85</li>
+            <li><strong>Floor Drains:</strong> 48</li>
+            <li><strong>HVAC Zones:</strong> 141</li>
+            <li><strong>HVAC Tonnage:</strong> 282 tons</li>
+            <li><strong>Vents:</strong> 987 total (705 supply + 282 return)</li>
+        </ul>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function showResult(content, isError = false) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${isError ? 'error' : 'success'}`;
+            resultDiv.innerHTML = content;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function createTestPDF() {
+            // Create a blob with HTML content and trigger download
+            const htmlContent = `
+            <html>
+            <body>
+                <h1>SUNSET RIDGE APARTMENTS</h1>
+                <h2>141-Unit Multi-Family Residential Development</h2>
+                
+                <h3>PROJECT OVERVIEW</h3>
+                <p>Total Units: 141 Dwelling Units</p>
+                <p>Gross Floor Area: 105,010 Square Feet</p>
+                <p>Building Type: Multi-Family Residential</p>
+                
+                <h3>PLUMBING FIXTURE SCHEDULE</h3>
+                <p>Water Closets (Toilets): 169</p>
+                <p>Lavatories (Sinks): 211</p>
+                <p>Kitchen Sinks: 141</p>
+                <p>Shower Units: 113</p>
+                <p>Bathtubs: 85</p>
+                <p>Floor Drains: 48</p>
+                
+                <h3>HVAC SYSTEM SPECIFICATIONS</h3>
+                <p>Number of Zones: 141 zones (1 per unit)</p>
+                <p>Total Tonnage: 282 tons (2 tons average per unit)</p>
+                <p>Supply Vents: 705 vents (5 per unit average)</p>
+                <p>Return Air Vents: 282 vents (2 per unit)</p>
+            </body>
+            </html>`;
+            
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'test-construction-plan.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showResult('Test HTML file created and downloaded. Convert to PDF for testing.');
+        }
+        
+        async function testEndpoint() {
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            testBtn.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/parse-proposal/test', {
+                    method: 'GET',
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('<h3>✅ Test Endpoint Success</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>');
+                } else {
+                    showResult('<h3>❌ Test Endpoint Failed</h3><p>' + response.statusText + '</p>', true);
+                }
+            } catch (error) {
+                showResult('<h3>❌ Test Endpoint Error</h3><p>' + error.message + '</p>', true);
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = 'Test API Endpoint';
+            }
+        }
+        
+        async function testParsing() {
+            const fileInput = document.getElementById('pdfFile');
+            const parseBtn = document.getElementById('parseBtn');
+            
+            if (!fileInput.files[0]) {
+                showResult('Please select a PDF file first', true);
+                return;
+            }
+            
+            parseBtn.disabled = true;
+            parseBtn.textContent = 'Parsing...';
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                // Try the real endpoint first
+                let response = await fetch('/api/parse-proposal', {
+                    method: 'POST',
+                    body: formData,
+                });
+                
+                // If real endpoint fails, try test endpoint
+                if (!response.ok && response.status === 400) {
+                    console.log('Real endpoint failed, trying test endpoint');
+                    response = await fetch('/api/parse-proposal/test-pdf', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                }
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const fileName = fileInput.files[0].name;
+                    
+                    showResult(`
+                        <h3>✅ PDF Parsing Success - ${fileName}</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <h4>Building Data:</h4>
+                                <ul>
+                                    <li>Square Footage: ${data.data.squareFootage?.toLocaleString() || 'N/A'} sq ft</li>
+                                    <li>Unit Count: ${data.data.unitCount || 'N/A'} units</li>
+                                    <li>Building Type: ${data.data.buildingType || 'N/A'}</li>
+                                </ul>
+                                
+                                <h4>Fixtures:</h4>
+                                <ul>
+                                    <li>Toilets: ${data.data.fixtures?.toilets || 'N/A'}</li>
+                                    <li>Sinks: ${data.data.fixtures?.sinks || 'N/A'}</li>
+                                    <li>Showers: ${data.data.fixtures?.showers || 'N/A'}</li>
+                                    <li>Bathtubs: ${data.data.fixtures?.bathtubs || 'N/A'}</li>
+                                    <li>Floor Drains: ${data.data.fixtures?.floorDrains || 'N/A'}</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4>HVAC System:</h4>
+                                <ul>
+                                    <li>Zones: ${data.data.hvac?.zones || 'N/A'}</li>
+                                    <li>Tonnage: ${data.data.hvac?.tonnage || 'N/A'} tons</li>
+                                    <li>Vents: ${data.data.hvac?.vents || 'N/A'}</li>
+                                </ul>
+                                
+                                <h4>File Info:</h4>
+                                <ul>
+                                    <li>Size: ${data.fileSize ? (data.fileSize / 1024).toFixed(1) + ' KB' : 'N/A'}</li>
+                                    <li>Status: ${data.message || 'Parsed successfully'}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <details style="margin-top: 15px;">
+                            <summary>Raw Response Data</summary>
+                            <pre style="font-size: 12px;">${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `);
+                } else {
+                    showResult('<h3>❌ PDF Parsing Failed</h3><p>' + response.statusText + '</p>', true);
+                }
+            } catch (error) {
+                showResult('<h3>❌ PDF Parsing Error</h3><p>' + error.message + '</p>', true);
+            } finally {
+                parseBtn.disabled = false;
+                parseBtn.textContent = 'Parse PDF with OpenAI';
+            }
+        }
+        
+        // Test endpoint availability on page load
+        window.onload = function() {
+            console.log('PDF Parsing Test Page Loaded');
+            console.log('Ready to test OpenAI PDF parsing implementation');
+        };
+    </script>
+</body>
+</html>
