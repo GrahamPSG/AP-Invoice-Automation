@@ -157,19 +157,26 @@ const Scenarios = () => {
       const formData = new FormData()
       formData.append('file', pdfFile)
 
-      // Try the real endpoint first, fall back to test endpoint
+      // Try the real endpoint first
+      console.log('Attempting to parse PDF with OpenAI API...')
       let response = await fetch('/api/parse-proposal', {
         method: 'POST',
         body: formData,
       })
       
+      console.log('API Response status:', response.status)
+      
       // If real endpoint fails, try test endpoint
-      if (!response.ok && response.status === 400) {
-        console.log('OpenAI not configured, using test endpoint')
+      if (!response.ok) {
+        console.log('Primary endpoint failed, trying test endpoint...')
+        const errorText = await response.text()
+        console.log('Error details:', errorText)
+        
         response = await fetch('/api/parse-proposal/test-pdf', {
           method: 'POST',
           body: formData,
         })
+        console.log('Test endpoint response status:', response.status)
       }
 
       if (!response.ok) {
