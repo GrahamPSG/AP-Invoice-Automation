@@ -11,12 +11,15 @@ build/
 .next/
 .vercel/
 
-# Environment variables
+# Environment variables - CRITICAL!
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+.env.staging
+*.env
 
 # IDE and editor files
 .vscode/
@@ -123,3 +126,8 @@ vite.config.ts.timestamp-*
 
 # Git configuration (local only)
 .gitconfig
+
+# Security - Never commit these!
+get-sharepoint-ids.ps1
+generate-secrets.ps1
+deploy-staging.ps1

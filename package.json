@@ -10,7 +10,10 @@
     "dev": "concurrently -k -n API,WORKERS,ADMIN \"pnpm --filter @paris/api dev\" \"pnpm --filter @paris/workers dev\" \"pnpm --filter @paris/admin dev\"",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
+    "test": "pnpm --filter @paris/api test && pnpm --filter @paris/workers test && pnpm --filter @paris/admin test",
+    "test:api": "pnpm --filter @paris/api test",
+    "test:workers": "pnpm --filter @paris/workers test",
+    "test:admin": "pnpm --filter @paris/admin test",
     "build": "pnpm -r build"
   },
   "devDependencies": {

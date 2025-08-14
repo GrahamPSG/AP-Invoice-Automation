@@ -4,8 +4,9 @@ const nextConfig = {
     appDir: true,
   },
   transpilePackages: ['@paris/shared'],
+  output: 'standalone',
   env: {
-    API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:3001',
+    API_BASE_URL: process.env.API_BASE_URL || 'http://localhost:4000',
   },
 };
 

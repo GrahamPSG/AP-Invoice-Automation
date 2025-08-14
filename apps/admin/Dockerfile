@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY pnpm-workspace.yaml ./
 COPY packages/shared/package.json ./packages/shared/
-COPY apps/api/package.json ./apps/api/
+COPY apps/admin/package.json ./apps/admin/
 
 # Install pnpm
 RUN npm install -g pnpm
@@ -18,13 +18,10 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY packages/shared ./packages/shared
-COPY apps/api ./apps/api
-
-# Generate Prisma client
-WORKDIR /app/apps/api
-RUN pnpm prisma generate
+COPY apps/admin ./apps/admin
 
 # Build the application
+WORKDIR /app/apps/admin
 RUN pnpm build
 
 # Production stage
@@ -35,27 +32,26 @@ RUN apk add --no-cache dumb-init
 
 # Create app user
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nestjs
+RUN adduser --system --uid 1001 nextjs
 
 # Set working directory
 WORKDIR /app
 
 # Copy built application
-COPY --from=builder --chown=nestjs:nodejs /app/apps/api/dist ./dist
-COPY --from=builder --chown=nestjs:nodejs /app/apps/api/node_modules ./node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/apps/api/package.json ./
-COPY --from=builder --chown=nestjs:nodejs /app/apps/api/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/admin/public ./public
 
 # Switch to non-root user
-USER nestjs
+USER nextjs
 
 # Expose port
-EXPOSE 4000
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:4000/health || exit 1
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start the application
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/main.js"]
+CMD ["node", "server.js"]
