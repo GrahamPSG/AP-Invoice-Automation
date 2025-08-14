@@ -8,6 +8,7 @@ import { ReviewModule } from './modules/review/review.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { OpenAIModule } from './modules/openai/openai.module';
+import { QueuesModule } from './queues/queues.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { OpenAIModule } from './modules/openai/openai.module';
     ReviewModule,
     ReportsModule,
     OpenAIModule,
+    QueuesModule,
   ],
 })
 export class AppModule {}

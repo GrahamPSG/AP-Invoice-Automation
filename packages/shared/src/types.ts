@@ -151,3 +151,30 @@ export interface AuditLog {
   timestamp: string;
   metadata?: Record<string, any>;
 }
+
+// Queue Management Types
+export interface QueueMessage<T = any> {
+  id: string;
+  correlationId: string;
+  timestamp: string;
+  payload: T;
+  retryCount: number;
+  metadata: {
+    queueName: string;
+    jobName: string;
+    addedAt: string;
+    [key: string]: any;
+  };
+}
+
+export interface ProcessingResult {
+  success: boolean;
+  error?: string;
+  message?: string;
+  data?: any;
+  nextStep?: string;
+}
+
+export function createCorrelationId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+}
