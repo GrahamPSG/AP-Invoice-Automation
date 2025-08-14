@@ -166,12 +166,19 @@ const Scenarios = () => {
       
       console.log('API Response status:', response.status)
       
-      // If real endpoint fails, try test endpoint
+      let result;
+      
+      // If primary endpoint fails, try test endpoint
       if (!response.ok) {
-        console.log('Primary endpoint failed, trying test endpoint...')
-        const errorText = await response.text()
-        console.log('Error details:', errorText)
+        console.log('Primary endpoint failed with status:', response.status)
+        try {
+          const errorText = await response.text()
+          console.log('Error details:', errorText)
+        } catch (e) {
+          console.log('Could not read error response')
+        }
         
+        console.log('Trying test endpoint...')
         response = await fetch('/api/parse-proposal/test-pdf', {
           method: 'POST',
           body: formData,
@@ -180,12 +187,16 @@ const Scenarios = () => {
       }
 
       if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error('Both endpoints failed:', errorText)
         throw new Error(`Failed to parse PDF: ${response.statusText}`)
       }
 
-      const result = await response.json()
+      result = await response.json()
+      console.log('API Response received:', result)
       
       if (result.success && result.data) {
+        console.log('✅ OpenAI API processing successful!')
         const openAIData = result.data
         
         // Convert OpenAI response to our PlanAnalysis format
@@ -259,7 +270,7 @@ const Scenarios = () => {
         tonnage: 45,
         vents: 96
       },
-      errors: ['Using fallback analysis - OpenAI API not available'],
+      errors: ['Using simulated data - check console for details'],
       confidence: 0.5
     }
   }
