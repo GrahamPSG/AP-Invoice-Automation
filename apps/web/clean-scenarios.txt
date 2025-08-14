@@ -1,6 +1,0 @@
-// This is where the component should start after line 362
-  if (showCreateForm) {
-    return (
-      <div className="container">
-        <div className="card">
-          <h2 className="card-title">Create New Scenario</h2>
