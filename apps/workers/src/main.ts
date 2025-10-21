@@ -8,6 +8,7 @@ import { ServiceTitanMatchProcessor } from './processors/servicetitan-match.proc
 import { ServiceTitanBillProcessor } from './processors/servicetitan-bill.processor';
 import { FileWriteProcessor } from './processors/file-write.processor';
 import { NotificationProcessor } from './processors/notification.processor';
+import { EmailSchedulerService } from './services/email-scheduler.service';
 import { logger } from './utils/logger';
 
 async function main() {
@@ -15,13 +16,34 @@ async function main() {
 
   const connection = createConnection();
 
-  // Create workers for each queue
+  // Create workers for each queue (simplified workflow - removed ServiceTitan workers)
   const workers = [
-    new Worker(QUEUE_NAMES.INGEST, EmailIngestProcessor.process, { connection }),
-    new Worker(QUEUE_NAMES.SPLIT, DocumentSplitProcessor.process, { connection }),
-    new Worker(QUEUE_NAMES.PARSE, DocumentParseProcessor.process, { connection }),
-    new Worker(QUEUE_NAMES.MATCH, ServiceTitanMatchProcessor.process, { connection }),
-    new Worker(QUEUE_NAMES.BILL, ServiceTitanBillProcessor.process, { connection }),
-    new Worker(QUEUE_NAMES.WRITE, FileWriteProcessor.process, { connection }),
-    new Worker(QUEUE_NAMES.NOTIFY, NotificationProcessor.process, { connection }),
-  ];\n\n  // Handle graceful shutdown\n  process.on('SIGINT', async () => {\n    logger.info('Shutting down workers...');\n    await Promise.all(workers.map(worker => worker.close()));\n    process.exit(0);\n  });\n\n  logger.info('All workers started successfully');\n}\n\nmain().catch((error) => {\n  logger.error('Failed to start workers', error);\n  process.exit(1);\n});"
+    new Worker(QUEUE_NAMES.INGEST, EmailIngestProcessor.process, { connection, concurrency: 2 }),
+    new Worker(QUEUE_NAMES.SPLIT, DocumentSplitProcessor.process, { connection, concurrency: 2 }),
+    new Worker(QUEUE_NAMES.PARSE, DocumentParseProcessor.process, { connection, concurrency: 3 }),
+    new Worker(QUEUE_NAMES.WRITE, FileWriteProcessor.process, { connection, concurrency: 1 }),
+    new Worker(QUEUE_NAMES.NOTIFY, NotificationProcessor.process, { connection, concurrency: 5 }),
+  ];
+
+  logger.info(`Started ${workers.length} workers`);
+
+  // Start email scheduler (7am and 2pm daily)
+  const emailScheduler = new EmailSchedulerService();
+  emailScheduler.startScheduler();
+
+  logger.info('Email scheduler started (7am and 2pm daily)');
+
+  // Handle graceful shutdown
+  process.on('SIGINT', async () => {
+    logger.info('Shutting down workers...');
+    await Promise.all(workers.map(worker => worker.close()));
+    process.exit(0);
+  });
+
+  logger.info('All workers and schedulers started successfully');
+}
+
+main().catch((error) => {
+  logger.error('Failed to start workers', error);
+  process.exit(1);
+});

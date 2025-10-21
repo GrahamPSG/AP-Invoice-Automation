@@ -54,9 +54,11 @@ model Document {
   poNumberRaw            String?
   poNumberCore           String?
   isServiceStock         Boolean     @default(false)
+  company                Company     @default(UNKNOWN) // Company identification (PSG, PM, or UNKNOWN)
   pageCount              Int
   sourcePdfPath          String
   renamedPdfPath         String?
+  sharepointPath         String?     // Path to file in SharePoint
   matchResult            MatchResult?
   bill                   Bill?
   hold                   Hold?
@@ -66,6 +68,7 @@ model Document {
 
   @@index([supplierNameNormalized, invoiceNumber])
   @@index([poNumberCore])
+  @@index([company])
 }
 
 model LineItem {
@@ -221,6 +224,12 @@ enum HoldReason {
   DUPLICATE
   NO_VENDOR_MATCH
   SERVICE_STOCK
+}
+
+enum Company {
+  PSG      // Paris Service Group (Paris Mechanical Service Group Ltd.)
+  PM       // Paris Mechanical (Paris Plumbing and Heating Ltd.)
+  UNKNOWN  // Cannot determine or not applicable
 }
 
 // NextAuth.js authentication models

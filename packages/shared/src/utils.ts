@@ -30,15 +30,24 @@ export function parseCurrency(text: string): number {
 }
 
 export function generateInvoiceFilename(
-  date: string,
-  supplier: string,
-  poNumber: string
+  vendorName: string,
+  invoiceNumber: string,
+  date: string
 ): string {
-  const dateStr = date.substring(0, 10); // YYYY-MM-DD
-  const cleanSupplier = supplier
+  // Format: [VendorName]_[InvoiceNumber]_[Date].pdf
+  const cleanVendor = vendorName
     .replace(/[^a-zA-Z0-9]/g, '_')
-    .substring(0, 30);
-  return `${dateStr}_${cleanSupplier}_PO${poNumber}.pdf`;
+    .replace(/_+/g, '_')
+    .substring(0, 40);
+
+  const cleanInvoiceNumber = invoiceNumber
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .replace(/_+/g, '_')
+    .substring(0, 20);
+
+  const dateStr = date.substring(0, 10); // YYYY-MM-DD
+
+  return `${cleanVendor}_${cleanInvoiceNumber}_${dateStr}.pdf`;
 }
 
 export function calculateVariance(billed: number, ordered: number): number {
@@ -126,4 +135,68 @@ export function retryWithBackoff<T>(
       }
     }
   });
+}
+
+/**
+ * Company identification for Paris Service Group vs Paris Mechanical
+ */
+export type CompanyIdentification = 'PSG' | 'PM' | 'UNKNOWN';
+
+/**
+ * Identify which Paris company an invoice is addressed to
+ * @param invoiceText - Full text content from the invoice
+ * @returns 'PSG' for Paris Service Group, 'PM' for Paris Mechanical, 'UNKNOWN' if cannot determine
+ */
+export function identifyCompany(invoiceText: string): CompanyIdentification {
+  const text = invoiceText.toLowerCase();
+
+  // Paris Service Group identifiers
+  // Legal name: Paris Mechanical Service Group Ltd.
+  const psgPatterns = [
+    /paris\s+mechanical\s+service\s+group/i,
+    /paris\s+service\s+group/i,
+    /\bpmsg\b/i,
+    /\bpsg\b/i
+  ];
+
+  // Paris Mechanical identifiers
+  // Legal name: Paris Plumbing and Heating Ltd.
+  // Must NOT match if it contains "service group"
+  const pmPatterns = [
+    /paris\s+plumbing\s+and\s+heating/i,
+    /paris\s+plumbing/i,
+    /paris\s+heating/i,
+    /\bpph\b/i
+  ];
+
+  // Check for Paris Mechanical (but exclude if it's actually PSG)
+  const hasPM = pmPatterns.some(p => p.test(invoiceText));
+  const hasPSG = psgPatterns.some(p => p.test(invoiceText));
+
+  // If it mentions "Paris Mechanical Service Group" or "Paris Service Group", it's PSG
+  if (hasPSG) {
+    return 'PSG';
+  }
+
+  // If it only mentions "Paris Mechanical" or "Paris Plumbing and Heating", it's PM
+  if (hasPM) {
+    return 'PM';
+  }
+
+  // Cannot determine
+  return 'UNKNOWN';
+}
+
+/**
+ * Get the SharePoint folder path for a company
+ * @param company - Company identification
+ * @returns SharePoint folder path from environment variables
+ */
+export function getSharePointFolder(company: CompanyIdentification): string {
+  if (company === 'PSG') {
+    return process.env.SP_PSG_DIR || process.env.SP_PROCESSED_DIR || '';
+  } else if (company === 'PM') {
+    return process.env.SP_PM_DIR || '';
+  }
+  return process.env.SP_UNKNOWN_DIR || process.env.SP_RAW_DIR || '';
 }

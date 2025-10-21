@@ -13,6 +13,7 @@ export interface DocumentAnalysisResult {
   total?: number;
   lineItems: DocumentLineItem[];
   confidence: number;
+  fullText?: string; // Full text content for company identification
 }
 
 export interface DocumentLineItem {
@@ -63,9 +64,12 @@ export class DocumentIntelligenceClient {
       const document = result.documents[0];
       const fields = document.fields || {};
 
+      // Extract full text from all pages for company identification
+      const fullText = result.content || '';
+
       // Extract standard invoice fields
       const analysis: DocumentAnalysisResult = {
-        supplierName: this.extractFieldValue(fields.VendorName) || 
+        supplierName: this.extractFieldValue(fields.VendorName) ||
                      this.extractFieldValue(fields.MerchantName) ||
                      supplierHint,
         invoiceNumber: this.extractFieldValue(fields.InvoiceId) ||
@@ -79,6 +83,7 @@ export class DocumentIntelligenceClient {
         hst: this.extractTaxValue(fields, 'HST'),
         lineItems: this.extractLineItems(fields.Items),
         confidence: document.confidence || 0,
+        fullText,
       };
 
       // If we couldn't extract total before tax, calculate it

@@ -33,8 +33,47 @@ export class GraphClient {
       .get();
   }
   
-  async uploadToSharePoint(filePath: string, content: Buffer) {
-    // TODO: Implement SharePoint upload
-    throw new Error('Not implemented');
+  /**
+   * Upload a file to SharePoint
+   * @param fileName - Name of the file to upload
+   * @param content - File content as Buffer
+   * @param destinationPath - Path relative to the drive root (e.g., "Paris Service Group - Documents/Supplier Invoices")
+   * @returns Upload response from SharePoint
+   */
+  async uploadToSharePoint(fileName: string, content: Buffer, destinationPath: string) {
+    const siteId = process.env.SP_SITE_ID!;
+    const driveId = process.env.SP_DRIVE_ID!;
+
+    // Ensure destination path doesn't start with /
+    const cleanPath = destinationPath.replace(/^\/+/, '');
+
+    // Encode the file path for URL
+    const encodedPath = encodeURIComponent(`${cleanPath}/${fileName}`);
+
+    try {
+      // For files larger than 4MB, we should use createUploadSession
+      // For now, use simple upload (works for files < 4MB)
+      const result = await this.client
+        .api(`/sites/${siteId}/drives/${driveId}/root:/${cleanPath}/${fileName}:/content`)
+        .put(content);
+
+      return result;
+    } catch (error: any) {
+      throw new Error(`SharePoint upload failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * List recent messages from the shared mailbox
+   * @param top - Number of messages to retrieve (default 50)
+   * @returns Array of message objects
+   */
+  async listMessages(top: number = 50) {
+    return await this.client
+      .api(`/users/${process.env.GRAPH_SHARED_MAILBOX}/messages`)
+      .top(top)
+      .select('id,subject,from,receivedDateTime,hasAttachments')
+      .orderby('receivedDateTime DESC')
+      .get();
   }
 }

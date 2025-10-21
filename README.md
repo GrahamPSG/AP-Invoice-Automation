@@ -6,44 +6,43 @@
 [![NestJS](https://img.shields.io/badge/NestJS-10.0-red)](https://nestjs.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-15.0-black)](https://nextjs.org/)
 
-An enterprise-grade automated accounts payable (AP) invoice processing system for Paris Mechanical/Paris Service Group. Automates supplier invoice intake, PO matching, bill creation in ServiceTitan, and document management in SharePoint.
+A simplified automated accounts payable (AP) invoice processing system for Paris Mechanical/Paris Service Group. Automates daily email monitoring (7am & 2pm), invoice parsing, company identification, and organized storage in SharePoint folders.
 
 ## ✨ Features
 
 ### 📧 **Email Integration**
-- **Microsoft Graph API**: Automated monitoring of shared AP mailbox
-- **Attachment Processing**: Intelligent PDF extraction and validation
-- **Email Archival**: Automatic organization in SharePoint folders
+- **Scheduled Monitoring**: Automatic email checks at 7am and 2pm daily
+- **Microsoft Graph API**: Monitors ap@parisservicegroup.com mailbox
+- **Attachment Processing**: Extracts PDF invoices from emails
+- **PDF Splitting**: Separates multi-invoice PDFs into individual files
 
 ### 🔍 **Document Processing**
 - **Azure Document Intelligence**: Advanced OCR for invoice data extraction
-- **OpenAI Enhancement**: AI-powered parsing for complex invoice formats
-- **Multi-page Support**: Handles complex supplier documents
+- **Company Identification**: Automatically distinguishes between:
+  - **Paris Service Group** (Paris Mechanical Service Group Ltd.)
+  - **Paris Mechanical** (Paris Plumbing and Heating Ltd.)
+- **Multi-page Support**: Splits complex supplier documents
 - **Duplicate Detection**: 90-day window duplicate invoice prevention
 
-### 🔄 **ServiceTitan Integration**
-- **PO Matching**: Intelligent purchase order lookup and fuzzy matching
-- **Automated Bill Creation**: Draft or finalized bills with proper routing
-- **Variance Management**: $25 threshold with notification alerts
-- **Job Assignment**: Lead technician and inventory location assignment
+### 📁 **SharePoint Organization**
+- **Automated Upload**: Files uploaded to company-specific folders
+- **Smart File Naming**: `[VendorName]_[InvoiceNumber]_[Date].pdf`
+- **Separate Folders**:
+  - PSG invoices → Paris Service Group folder
+  - PM invoices → Paris Mechanical folder
+  - Unknown → Separate folder for manual review
 
-### 📊 **Business Logic & Compliance**
-- **Canadian Tax Handling**: GST/PST calculation and validation
-- **Service Stock Processing**: Special handling for service stock items
-- **Lump Sum Billing**: Intelligent line item consolidation for complex invoices
-- **Hold Management**: Exception handling with manual review workflows
-
-### 🔔 **Notifications & Reporting**
-- **Microsoft Teams**: Rich notification cards with action buttons
+### 🔔 **Notifications & Monitoring**
+- **Microsoft Teams**: Alerts for processing status
 - **Email Alerts**: SMTP notifications for stakeholders
-- **Daily Summaries**: 7:00 AM PT automated reporting
 - **Real-time Monitoring**: Queue health and processing status
+- **Error Handling**: Graceful degradation and retry mechanisms
 
 ### 🛡️ **Enterprise Features**
 - **Queue Management**: BullMQ-based processing pipeline with Redis
 - **Health Monitoring**: Comprehensive system health checks
-- **Error Handling**: Graceful degradation and retry mechanisms
 - **Audit Logging**: Complete processing trail for compliance
+- **Database Tracking**: Full history of all processed invoices
 
 ## 🏗️ Architecture
 
@@ -116,22 +115,20 @@ Copy `.env.example` to `.env` and configure:
 GRAPH_TENANT_ID=your-tenant-id
 GRAPH_CLIENT_ID=your-client-id
 GRAPH_CLIENT_SECRET=your-client-secret
-GRAPH_SHARED_MAILBOX=ap@yourdomain.com
+GRAPH_SHARED_MAILBOX=ap@parisservicegroup.com
 
-# ServiceTitan API
-ST_BASE_URL=https://api.servicetitan.io
-ST_CLIENT_ID=your-servicetitan-client-id
-ST_CLIENT_SECRET=your-servicetitan-client-secret
-ST_TENANT_ID=your-servicetitan-tenant-id
+# SharePoint Configuration
+SP_SITE_ID=your-sharepoint-site-id
+SP_DRIVE_ID=your-sharepoint-drive-id
+SP_PSG_DIR="Paris Mechanical(1)/Paris Service Group - Documents/Supplier Invoices"
+SP_PM_DIR="Paris Mechanical(1)/Paris Mechanical - Documents/Supplier Invoices"
+SP_UNKNOWN_DIR="Paris Mechanical(1)/Paris Service Group - Documents/Finance/AP/_unknown"
 
 # Azure Document Intelligence
 AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT=your-endpoint
 AZURE_DOCUMENT_INTELLIGENCE_KEY=your-key
 
-# OpenAI (Enhanced Parsing)
-OPENAI_API_KEY=your-openai-key
-
-# Teams Notifications
+# Teams Notifications (Optional)
 TEAMS_WEBHOOK_URL=your-teams-webhook-url
 
 # Database & Cache
@@ -140,24 +137,52 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
+### Required Configurations
+
+**Microsoft Graph API Setup:**
+1. Create an Azure AD App Registration
+2. Grant permissions: `Mail.Read`, `Files.ReadWrite.All`
+3. Configure client credentials
+4. Set shared mailbox: `ap@parisservicegroup.com`
+
+**SharePoint Setup:**
+1. Get Site ID and Drive ID from SharePoint
+2. Configure three destination folders:
+   - Paris Service Group invoices
+   - Paris Mechanical invoices
+   - Unknown/Manual review folder
+
+**Azure Document Intelligence:**
+1. Create Document Intelligence resource in Azure
+2. Use the prebuilt invoice model
+3. Configure endpoint and API key
+
 ## 📊 Processing Pipeline
 
-### Document Flow
-1. **Email Ingestion** → Monitor shared mailbox for new invoices
-2. **Document Splitting** → Extract and validate PDF attachments  
-3. **OCR Processing** → Extract structured data using Azure + OpenAI
-4. **PO Matching** → Find corresponding ServiceTitan purchase orders
-5. **Bill Creation** → Create drafts or finalized bills in ServiceTitan
-6. **File Management** → Rename and organize PDFs in SharePoint
-7. **Notifications** → Send alerts to Teams and email stakeholders
+### Simplified Document Flow
+1. **Email Scheduler** → Runs at 7am and 2pm daily to check ap@parisservicegroup.com
+2. **Email Ingestion** → Downloads invoices from new emails with PDF attachments
+3. **Document Splitting** → Separates multi-page PDFs into individual invoices
+4. **OCR Processing** → Extracts invoice data using Azure Document Intelligence
+5. **Company Identification** → Determines if invoice is for PSG or PM
+6. **File Upload** → Renames file (`VendorName_InvoiceNumber_Date.pdf`) and uploads to SharePoint
+7. **Notifications** → Sends alerts to Teams and email stakeholders
 
 ### Queue Architecture
-- **document-split**: PDF extraction and validation
-- **document-parse**: OCR and data extraction
-- **servicetitan-match**: PO lookup and matching
-- **servicetitan-bill**: Bill creation and processing
-- **file-write**: SharePoint document management
+- **email-ingest**: Download emails and PDF attachments
+- **document-split**: Split multi-invoice PDFs
+- **document-parse**: OCR and company identification
+- **file-write**: Rename and upload to SharePoint
 - **notification**: Teams and email alerts
+
+### Company Identification Logic
+The system analyzes invoice text to determine the destination folder:
+
+| Invoice Contains | Destination | Company |
+|-----------------|-------------|---------|
+| "Paris Mechanical Service Group" or "Paris Service Group" | PSG Folder | Paris Service Group |
+| "Paris Mechanical" or "Paris Plumbing and Heating" (without "Service Group") | PM Folder | Paris Mechanical |
+| Cannot determine | Unknown Folder | Manual review needed |
 
 ## 🧪 Testing
 
@@ -178,17 +203,23 @@ pnpm test:cov
 ## 📈 Business Impact
 
 ### Automation Benefits
-- **⚡ 95% Processing Automation**: Reduces manual AP processing time
-- **🎯 $25 Variance Threshold**: Automated approval within tolerance
-- **📊 Real-time Visibility**: Live dashboard for AP operations
-- **🔍 Compliance Tracking**: Complete audit trail for all transactions
-- **⏰ 24/7 Processing**: Continuous invoice intake and processing
+- **⏰ Scheduled Monitoring**: Automatic email checks at 7am and 2pm daily
+- **📁 Smart Organization**: Company-specific folders with consistent naming
+- **🎯 Accurate Routing**: Separates PSG and PM invoices automatically
+- **🔍 Duplicate Prevention**: 90-day window prevents duplicate processing
+- **📊 Audit Trail**: Complete database tracking of all invoices
 
 ### Performance Metrics
 - **Processing Time**: <2 minutes average per invoice
-- **Accuracy Rate**: >98% with AI-enhanced OCR
-- **Exception Rate**: <5% requiring manual intervention
+- **Accuracy Rate**: >98% with Azure Document Intelligence OCR
+- **Company ID Accuracy**: >95% automatic classification
 - **Duplicate Prevention**: 100% effectiveness with 90-day window
+
+### Daily Workflow
+1. **7:00 AM**: System checks ap@parisservicegroup.com for new invoices
+2. **2:00 PM**: Second daily check for afternoon invoices
+3. **Automatic Processing**: Invoices are parsed, identified, and uploaded to SharePoint
+4. **Result**: Team accesses organized invoices in SharePoint folders
 
 ## 🚀 Deployment
 

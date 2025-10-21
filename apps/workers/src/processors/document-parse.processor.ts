@@ -1,5 +1,5 @@
 import { Job } from 'bullmq';
-import { QueueMessage, ProcessingResult, normalizeVendorName, categorizeItem, isServiceStock } from '@paris/shared';
+import { QueueMessage, ProcessingResult, normalizeVendorName, categorizeItem, isServiceStock, identifyCompany, CompanyIdentification } from '@paris/shared';
 import { DocumentIntelligenceClient } from '../clients/document-intelligence.client';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
@@ -89,7 +89,14 @@ export class DocumentParseProcessor {
       
       // Check for service stock indicators
       const isStock = isServiceStock(analysis.supplierName + ' ' + (analysis.lineItems[0]?.description || ''));
-      
+
+      // Identify which company this invoice is for
+      const company = identifyCompany(analysis.fullText || '');
+      logger.info(`Company identified as: ${company}`, {
+        documentId: id,
+        supplierName: analysis.supplierName
+      });
+
       // Create document record
       const document = await prisma.document.create({
         data: {
@@ -105,6 +112,7 @@ export class DocumentParseProcessor {
           poNumberRaw: analysis.poNumber,
           poNumberCore,
           isServiceStock: isStock,
+          company: company as any, // Company identification (PSG, PM, UNKNOWN)
           pageCount: 1, // TODO: Get from PDF analysis
           sourcePdfPath: pdfPath,
           lineItems: {
@@ -148,19 +156,20 @@ export class DocumentParseProcessor {
       }
 
       logger.info(`Document parsing completed successfully: ${document.id}`);
-      
+
       return {
         success: true,
         message: 'Document parsing completed',
-        data: { 
+        data: {
           documentId: document.id,
           supplierName: analysis.supplierName,
           invoiceNumber: analysis.invoiceNumber,
           total: analysis.total,
           poNumber: analysis.poNumber,
-          isServiceStock: isStock
+          isServiceStock: isStock,
+          company: company
         },
-        nextStep: 'servicetitan-match'
+        nextStep: 'file-write' // Skip ServiceTitan integration, go straight to SharePoint upload
       };
       
     } catch (error) {
