@@ -8,7 +8,8 @@
     "build": "tsc",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
-    "test": "jest"
+    "test": "jest",
+    "process-invoices": "tsx src/scripts/process-existing-invoices.ts"
   },
   "dependencies": {
     "@azure/service-bus": "^7.9.0",
